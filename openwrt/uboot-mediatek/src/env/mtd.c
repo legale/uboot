@@ -6,12 +6,29 @@
 #include <errno.h>
 #include <malloc.h>
 #include <mtd.h>
+#include <stddef.h>
 #include <asm/cache.h>
 #include <asm/global_data.h>
 #include <linux/mtd/mtd.h>
 #include <u-boot/crc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+static void env_mtd_crc_debug(const char *op, u32 env_off, const env_t *env)
+{
+	u32 crc;
+
+	printf("env_mtd: %s dev=%s crc_offset=0x%lx stored_crc=0x%08x\n",
+	       op, CONFIG_ENV_MTD_DEV,
+	       (ulong)env_off + (ulong)offsetof(env_t, crc), env->crc);
+	printf("env_mtd: %s dev=%s calc_offset=0x%lx calc_size=0x%lx\n",
+	       op, CONFIG_ENV_MTD_DEV,
+	       (ulong)env_off + (ulong)offsetof(env_t, data), (ulong)ENV_SIZE);
+
+	crc = crc32(0, env->data, ENV_SIZE);
+	printf("env_mtd: %s calc_crc=0x%08x stored_crc=0x%08x ok=%d\n",
+	       op, crc, env->crc, crc == env->crc);
+}
 
 static int setup_mtd_device(struct mtd_info **mtd_env)
 {
@@ -83,6 +100,8 @@ static int env_mtd_save(void)
 	ret = env_export(&env_new);
 	if (ret)
 		goto done;
+
+	env_mtd_crc_debug("save", CONFIG_ENV_OFFSET, &env_new);
 
 	sect_num = DIV_ROUND_UP(CONFIG_ENV_SIZE, sect_size);
 
@@ -184,6 +203,8 @@ static int env_mtd_load(void)
 		offset += ret_len;
 		remaining -= ret_len;
 	}
+
+	env_mtd_crc_debug("load", CONFIG_ENV_OFFSET, (env_t *)buf);
 
 	ret = env_import(buf, 1, H_EXTERNAL);
 	if (!ret)

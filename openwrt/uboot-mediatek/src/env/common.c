@@ -450,7 +450,9 @@ int env_import(const char *buf, int check, int flags)
 		memcpy(&crc, &ep->crc, sizeof(crc));
 
 		if (crc32(0, ep->data, ENV_SIZE) != crc) {
-			env_set_default("bad CRC", 0);
+			env_set_default("bad CRC32", 0);
+			printf("Writing env to dev...\n");
+			env_save();
 			return -ENOMSG; /* needed for env_load() */
 		}
 	}
@@ -534,7 +536,9 @@ int env_import_redund(const char *buf1, int buf1_read_fail,
 		env_set_default("bad env area", 0);
 		return -EIO;
 	} else if (ret == -ENOMSG) {
-		env_set_default("bad CRC", 0);
+		env_set_default("bad CRC32", 0);
+		printf("Writing env to dev...\n");
+		env_save();
 		return -ENOMSG;
 	}
 
@@ -579,7 +583,9 @@ void env_relocate(void)
 		env_set_default(NULL, 0);
 #else
 		bootstage_error(BOOTSTAGE_ID_NET_CHECKSUM);
-		env_set_default("bad CRC", 0);
+		env_set_default("bad CRC32", 0);
+		printf("Writing env to dev...\n");
+		env_save();
 #endif
 	} else {
 		env_load();

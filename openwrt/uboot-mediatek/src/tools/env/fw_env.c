@@ -525,6 +525,8 @@ int fw_env_flush(struct env_opts *opts)
 		return -1;
 	}
 
+	environment.dirty = 0;
+
 	return 0;
 }
 
@@ -1406,6 +1408,25 @@ static int flash_io(int mode, void *buf, size_t count)
 	return rc;
 }
 
+static void env_crc_debug_read(int dev, const char *copy, off_t off, uint32_t crc)
+{
+	fprintf(stderr, "fw_env: %s dev=%s crc_offset=0x%llx stored_crc=0x%08x\n",
+		copy, DEVNAME(dev), (unsigned long long)off, crc);
+}
+
+static void env_crc_debug_calc(int dev, const char *copy, off_t off, size_t size)
+{
+	fprintf(stderr, "fw_env: %s dev=%s calc_offset=0x%llx calc_size=0x%zx\n",
+		copy, DEVNAME(dev), (unsigned long long)off, size);
+}
+
+static void env_crc_debug_result(const char *copy, uint32_t calc, uint32_t stored,
+				 int ok)
+{
+	fprintf(stderr, "fw_env: %s calc_crc=0x%08x stored_crc=0x%08x ok=%d\n",
+		copy, calc, stored, ok);
+}
+
 /*
  * Prevent confusion if running from erased flash memory
  */
@@ -1445,11 +1466,18 @@ int fw_env_open(struct env_opts *opts)
 	if (!have_redund_env) {
 		struct env_image_single *single = buf0;
 
+		env_crc_debug_read(0, "env0", DEVOFFSET(0) +
+				   offsetof(struct env_image_single, crc),
+				   single->crc);
+		env_crc_debug_calc(0, "env0", DEVOFFSET(0) +
+				   offsetof(struct env_image_single, data),
+				   ENV_SIZE);
 		crc0 = crc32(0, (uint8_t *)single->data, ENV_SIZE);
 		crc0_ok = (crc0 == single->crc);
+		env_crc_debug_result("env0", crc0, single->crc, crc0_ok);
 		if (!crc0_ok) {
 			fprintf(stderr,
-				"Warning: Bad CRC, using default environment\n");
+				"Warning: Bad CRC32, using default env\n");
 			memcpy(single->data, default_environment,
 			       sizeof(default_environment));
 			environment.dirty = 1;
@@ -1463,8 +1491,15 @@ int fw_env_open(struct env_opts *opts)
 		struct env_image_redundant *redundant0 = buf0;
 		struct env_image_redundant *redundant1;
 
+		env_crc_debug_read(0, "env0", DEVOFFSET(0) +
+				   offsetof(struct env_image_redundant, crc),
+				   redundant0->crc);
+		env_crc_debug_calc(0, "env0", DEVOFFSET(0) +
+				   offsetof(struct env_image_redundant, data),
+				   ENV_SIZE);
 		crc0 = crc32(0, (uint8_t *)redundant0->data, ENV_SIZE);
 		crc0_ok = (crc0 == redundant0->crc);
+		env_crc_debug_result("env0", crc0, redundant0->crc, crc0_ok);
 
 		flag0 = redundant0->flags;
 
@@ -1507,9 +1542,16 @@ int fw_env_open(struct env_opts *opts)
 			goto open_cleanup;
 		}
 
+		env_crc_debug_read(1, "env1", DEVOFFSET(1) +
+				   offsetof(struct env_image_redundant, crc),
+				   redundant1->crc);
+		env_crc_debug_calc(1, "env1", DEVOFFSET(1) +
+				   offsetof(struct env_image_redundant, data),
+				   ENV_SIZE);
 		crc1 = crc32(0, (uint8_t *)redundant1->data, ENV_SIZE);
 
 		crc1_ok = (crc1 == redundant1->crc);
+		env_crc_debug_result("env1", crc1, redundant1->crc, crc1_ok);
 		flag1 = redundant1->flags;
 
 		if (memcmp(redundant0->data, redundant1->data, ENV_SIZE) ||
@@ -1522,7 +1564,7 @@ int fw_env_open(struct env_opts *opts)
 			dev_current = 1;
 		} else if (!crc0_ok && !crc1_ok) {
 			fprintf(stderr,
-				"Warning: Bad CRC, using default environment\n");
+				"Warning: Bad CRC32, using default env\n");
 			memcpy(redundant0->data, default_environment,
 			       sizeof(default_environment));
 			environment.dirty = 1;
@@ -1584,6 +1626,11 @@ int fw_env_open(struct env_opts *opts)
 		fprintf(stderr, "Selected env in %s\n", DEVNAME(dev_current));
 #endif
 	}
+	if (environment.dirty){
+		fprintf(stderr, "Writing env to dev=%s\n", DEVNAME(dev_current));
+		fw_env_flush(opts);
+	}
+
 	return 0;
 
  open_cleanup:
