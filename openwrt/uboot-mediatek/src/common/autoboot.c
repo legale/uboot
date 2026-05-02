@@ -387,7 +387,7 @@ static int abortboot_key_sequence(int bootdelay)
 	int abort;
 	uint64_t etime = endtick(bootdelay);
 
-	if (IS_ENABLED(CONFIG_AUTOBOOT_FLUSH_STDIN))
+	if (IS_ENABLED(CONFIG_AUTOBOOT_FLUSH_STDIN) && bootdelay > 0)
 		flush_stdin();
 #  ifdef CONFIG_AUTOBOOT_PROMPT
 	/*
