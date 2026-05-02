@@ -530,28 +530,61 @@ const char *bootdelay_process(void)
 
 void autoboot_command(const char *s)
 {
+	static const char fallback_cmd[] = "bootm 0xbfc90000";
+	const char *cmd = s;
+	bool do_autoboot = false;
+	bool lock;
+	int ret;
+	int prev = 0;
+
 	debug("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
 
-	if (s && (stored_bootdelay == -2 ||
-		 (stored_bootdelay != -1 && !abortboot(stored_bootdelay)))) {
-		bool lock;
-		int prev;
+	if (stored_bootdelay != -1) {
+		int key_check_delay = stored_bootdelay;
 
+		/*
+		 * Keep immediate-boot behavior for negative delays (e.g. -2),
+		 * but still perform one unified abort check path.
+		 */
+		if (key_check_delay < 0) {
+			key_check_delay = 0;
+		}
+
+		do_autoboot = !abortboot(key_check_delay);
+	}
+
+	if (do_autoboot) {
 		lock = autoboot_keyed() &&
 			!IS_ENABLED(CONFIG_AUTOBOOT_KEYED_CTRLC);
-		if (lock)
+		if (lock) {
 			prev = disable_ctrlc(1); /* disable Ctrl-C checking */
+		}
 
-		run_command_list(s, -1, 0);
+		if (!cmd) {
+			printf("Autoboot command is undefined, running hardcoded fallback: %s\n",
+			       fallback_cmd);
+			cmd = fallback_cmd;
+		}
 
-		if (lock)
+		ret = run_command_list(cmd, -1, 0);
+		if (ret && cmd != fallback_cmd) {
+			printf("Autoboot failed (%d), running hardcoded fallback: %s\n",
+			       ret, fallback_cmd);
+			run_command_list(fallback_cmd, -1, 0);
+		} else if (ret && cmd == fallback_cmd) {
+			printf("Autoboot fallback failed (%d): %s\n", ret, fallback_cmd);
+		}
+
+		if (lock) {
 			disable_ctrlc(prev);	/* restore Ctrl-C checking */
+		}
 	}
 
 	if (IS_ENABLED(CONFIG_AUTOBOOT_USE_MENUKEY) &&
 	    menukey == AUTOBOOT_MENUKEY) {
 		s = env_get("menucmd");
-		if (s)
+		if (s) {
 			run_command_list(s, -1, 0);
+		}
 	}
 }
