@@ -343,6 +343,41 @@ static bool fallback_to_sha256(void)
 		return true;
 }
 
+static bool autoboot_keyed_configured(void)
+{
+	if (IS_ENABLED(CONFIG_AUTOBOOT_ENCRYPTION)) {
+		const char *crypt_key = env_get("bootstopkeycrypt");
+		const char *sha_key = env_get("bootstopkeysha256");
+
+		if ((crypt_key && *crypt_key) || (sha_key && *sha_key)) {
+			return true;
+		}
+#ifdef CONFIG_AUTOBOOT_STOP_STR_ENABLE
+		if (AUTOBOOT_STOP_STR_CRYPT[0] != '\0' ||
+		    AUTOBOOT_STOP_STR_SHA256[0] != '\0') {
+			return true;
+		}
+#endif
+		return false;
+	}
+
+	if (env_get("bootdelaykey") || env_get("bootstopkey")) {
+		return true;
+	}
+#ifdef CONFIG_AUTOBOOT_DELAY_STR
+	if (CONFIG_AUTOBOOT_DELAY_STR[0] != '\0') {
+		return true;
+	}
+#endif
+#ifdef CONFIG_AUTOBOOT_STOP_STR
+	if (CONFIG_AUTOBOOT_STOP_STR[0] != '\0') {
+		return true;
+	}
+#endif
+
+	return false;
+}
+
 /***************************************************************************
  * Watch for 'delay' seconds for autoboot stop or autoboot delay string.
  * returns: 0 -  no key string, allow autoboot 1 - got key string, abort
@@ -423,7 +458,7 @@ static int abortboot(int bootdelay)
 	int abort = 0;
 
 	if (bootdelay >= 0) {
-		if (autoboot_keyed())
+		if (autoboot_keyed() && autoboot_keyed_configured())
 			abort = abortboot_key_sequence(bootdelay);
 		else
 			abort = abortboot_single_key(bootdelay);
