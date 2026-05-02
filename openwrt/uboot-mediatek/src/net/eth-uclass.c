@@ -16,6 +16,8 @@
 #include <nvmem.h>
 #include <asm/global_data.h>
 #include <dm/device-internal.h>
+#include <dm/ofnode.h>
+#include <dm/read.h>
 #include <dm/uclass-internal.h>
 #include <net/pcap.h>
 #include "eth_internal.h"
@@ -562,25 +564,102 @@ static int eth_pre_unbind(struct udevice *dev)
 	return 0;
 }
 
+static void eth_mac_addr_add(u8 mac[ARP_HLEN], u32 increment)
+{
+	int i;
+
+	for (i = ARP_HLEN - 1; i >= 0 && increment; i--) {
+		u32 sum = mac[i] + (increment & 0xff);
+
+		mac[i] = sum & 0xff;
+		increment = (increment >> 8) + (sum >> 8);
+	}
+}
+
+static bool eth_read_mac_from_nvmem(struct udevice *dev, u8 mac[ARP_HLEN])
+{
+	struct ofnode_phandle_args args;
+	struct nvmem_cell mac_cell;
+	ofnode cell_parent, storage_parent;
+	fdt_size_t size = FDT_SIZE_T_NONE;
+	fdt_addr_t cell_offset;
+	u32 increment = 0;
+	int index;
+	int ret;
+
+	index = dev_read_stringlist_search(dev, "nvmem-cell-names", "mac-address");
+	if (index < 0) {
+		printf("MACDBG %s: nvmem cell name lookup failed (%d)\n",
+		       dev->name, index);
+		return false;
+	}
+
+	ret = dev_read_phandle_with_args(dev, "nvmem-cells", "#nvmem-cell-cells",
+					 0, index, &args);
+	if (ret) {
+		printf("MACDBG %s: nvmem phandle parse failed (%d)\n",
+		       dev->name, ret);
+		return false;
+	}
+
+	ret = nvmem_cell_get_by_name(dev, "mac-address", &mac_cell);
+	if (ret) {
+		printf("MACDBG %s: nvmem cell lookup failed (%d)\n",
+		       dev->name, ret);
+		return false;
+	}
+
+	ret = nvmem_cell_read(&mac_cell, mac, ARP_HLEN);
+	if (ret) {
+		printf("MACDBG %s: nvmem read failed (%d)\n",
+		       dev->name, ret);
+		return false;
+	}
+
+	cell_offset = ofnode_get_addr_size_index_notrans(args.node, 0, &size);
+	if (cell_offset == FDT_ADDR_T_NONE || size == FDT_SIZE_T_NONE) {
+		printf("MACDBG %s: missing reg for nvmem cell %s\n",
+		       dev->name, ofnode_get_name(args.node));
+		return false;
+	}
+
+	if (args.args_count > 0)
+		increment = args.args[0];
+
+	if (increment)
+		eth_mac_addr_add(mac, increment);
+
+	cell_parent = ofnode_get_parent(args.node);
+	storage_parent = ofnode_valid(cell_parent) ?
+			 ofnode_get_parent(cell_parent) : ofnode_null();
+
+	printf("MACDBG %s: from nvmem dts_cell=%s dts_parent=%s off=0x%llx size=%llu inc=%u value=%pM\n",
+	       dev->name, ofnode_get_name(args.node),
+	       ofnode_valid(storage_parent) ? ofnode_get_name(storage_parent) :
+	       (ofnode_valid(cell_parent) ? ofnode_get_name(cell_parent) : "<none>"),
+	       (unsigned long long)cell_offset, (unsigned long long)size,
+	       increment, mac);
+
+	return true;
+}
+
 static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
 {
 #if CONFIG_IS_ENABLED(OF_CONTROL)
 	const uint8_t *p;
-	struct nvmem_cell mac_cell;
 
 	p = dev_read_u8_array_ptr(dev, "mac-address", ARP_HLEN);
-	if (!p)
+	if (!p) {
 		p = dev_read_u8_array_ptr(dev, "local-mac-address", ARP_HLEN);
+	}
 
 	if (p) {
 		memcpy(mac, p, ARP_HLEN);
+		printf("MACDBG %s: from DT %pM\n", dev->name, mac);
 		return true;
 	}
 
-	if (nvmem_cell_get_by_name(dev, "mac-address", &mac_cell))
-		return false;
-
-	return !nvmem_cell_read(&mac_cell, mac, ARP_HLEN);
+	return eth_read_mac_from_nvmem(dev, mac);
 #else
 	return false;
 #endif
