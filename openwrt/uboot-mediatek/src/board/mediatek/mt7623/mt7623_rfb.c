@@ -73,6 +73,7 @@ int mmc_get_env_dev(void)
 int board_late_init(void)
 {
 	struct udevice *dev;
+	int recovery = 0;
 
 	if (!button_get_by_label(CONFIG_RESET_BUTTON_LABEL, &dev)) {
 		puts("reset button found\n");
@@ -85,10 +86,15 @@ int board_late_init(void)
 		if (button_get_state(dev) == BUTTON_ON) {
 			puts("button pushed, resetting environment\n");
 			gd->env_valid = ENV_INVALID;
+			recovery = 1;
 		}
 	}
 
 	env_relocate();
+	// force l2sh in recovery even if persisted env has l2sh=0
+	// принудительно включаем l2sh в recovery, даже если в env было l2sh=0
+	if (recovery && IS_ENABLED(CONFIG_L2SH))
+		env_set("l2sh", "1");
 	return 0;
 }
 

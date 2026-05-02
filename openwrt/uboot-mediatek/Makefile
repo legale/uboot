@@ -11,6 +11,19 @@ include $(INCLUDE_DIR)/u-boot.mk
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
 
+define Package/l2sh
+  SECTION:=utils
+  CATEGORY:=Utilities
+  SUBMENU:=Boot Loaders
+  TITLE:=l2sh client for u-boot
+  DEPENDS:=+libc
+  DEFAULT:=y
+endef
+
+define Package/l2sh/description
+  Simple raw ethernet client for the u-boot l2sh transport.
+endef
+
 MT7621_LOWLEVEL_PRELOADER_URL:=https://raw.githubusercontent.com/mtk-openwrt/mt7621-lowlevel-preloader/a03b07c60bf1ba4add9b671d32caa102fe948180/
 
 define Download/mt7621-stage-sram
@@ -1356,6 +1369,11 @@ define Build/Compile
 ifneq ($(filter u-boot.fip,$(UBOOT_IMAGE)),)
 	$(call Build/fip-image)
 endif
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) -D_GNU_SOURCE -D__USE_MISC -Wall -Wextra \
+		-iquote $(CURDIR)/src/include $(CURDIR)/src/tools/l2sh/l2sh_client.c \
+		$(CURDIR)/src/tools/l2sh/common.c \
+		$(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/l2sh
+	$(TARGET_CROSS)strip $(PKG_BUILD_DIR)/l2sh
 endef
 
 # don't install package payload for mediatek, but still publish build artifacts
@@ -1376,4 +1394,10 @@ endif
 endef
 endif
 
+define Package/l2sh/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/l2sh $(1)/usr/bin/l2sh
+endef
+
 $(eval $(call BuildPackage/U-Boot))
+$(eval $(call BuildPackage,l2sh))

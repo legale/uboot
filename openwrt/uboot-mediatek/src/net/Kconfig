@@ -37,6 +37,39 @@ config NETCONSOLE
 	  Support the 'nc' input/output device for networked console.
 	  See doc/usage/netconsole.rst for details.
 
+config L2SH
+	bool "l2sh transport"
+	depends on DM_ETH
+	help
+	  Enable a raw Ethernet shell transport compatible with the existing
+	  l2sh client protocol. This bypasses IP, ARP, UDP and TCP.
+	  The matching OpenWrt client is packaged as /usr/bin/l2sh.
+
+config L2SH_TIMEOUT_MS
+	int "l2sh session timeout in milliseconds"
+	depends on L2SH
+	default 30000
+	range 1000 600000
+	help
+	  Timeout for an inactive l2sh session.
+
+config L2SH_RX_SIZE
+	int "l2sh RX ring size in bytes"
+	depends on L2SH
+	default 1024
+	range 256 4096
+	help
+	  Fixed-size receive ring for bytes going into the U-Boot CLI.
+
+config L2SH_TX_SIZE
+	int "l2sh TX ring size in bytes"
+	depends on L2SH
+	default 2048
+	range 512 8192
+	help
+	  Fixed-size transmit ring for console output mirrored to the active
+	  l2sh session.
+
 config IP_DEFRAG
 	bool "Support IP datagram reassembly"
 	help

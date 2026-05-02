@@ -22,6 +22,7 @@ int board_late_init(void)
 {
 	gd->env_valid = 1; //to load environment variable from persistent store
 	struct udevice *dev;
+	int recovery = 0;
 
 	gd->env_valid = ENV_VALID;
 	if (!button_get_by_label(CONFIG_RESET_BUTTON_LABEL, &dev)) {
@@ -35,9 +36,14 @@ int board_late_init(void)
 		if (button_get_state(dev) == BUTTON_ON) {
 			puts("button pushed, resetting environment\n");
 			gd->env_valid = ENV_INVALID;
+			recovery = 1;
 		}
 	}
 	env_relocate();
+	// force l2sh in recovery even if persisted env has l2sh=0
+	// принудительно включаем l2sh в recovery, даже если в env было l2sh=0
+	if (recovery && IS_ENABLED(CONFIG_L2SH))
+		env_set("l2sh", "1");
 	return 0;
 }
 

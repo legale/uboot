@@ -20,6 +20,7 @@
 #include <stdio_dev.h>
 #include <exports.h>
 #include <env_internal.h>
+#include <l2sh.h>
 #include <video_console.h>
 #include <watchdog.h>
 #include <asm/global_data.h>
@@ -526,6 +527,13 @@ int fgetc(int file)
 		 */
 		for (;;) {
 			schedule();
+			if (file == stdin) {
+				// pull network input into the cli before waiting on serial
+				// сначала подаем сетевой ввод в cli, потом ждем serial
+				l2sh_poll();
+				if (l2sh_tstc())
+					return l2sh_getc();
+			}
 			if (CONFIG_IS_ENABLED(CONSOLE_MUX)) {
 				/*
 				 * Upper layer may have already called tstc() so
@@ -553,8 +561,16 @@ int fgetc(int file)
 
 int ftstc(int file)
 {
-	if ((unsigned int)file < MAX_FILES)
+	if ((unsigned int)file < MAX_FILES) {
+		if (file == stdin) {
+			// poll here too so non-blocking stdin keeps the session alive
+			// опрашиваем и здесь, чтобы неблокирующий stdin не давал сессии протухнуть
+			l2sh_poll();
+			if (l2sh_tstc())
+				return 1;
+		}
 		return console_tstc(file);
+	}
 
 	return -1;
 }
@@ -614,6 +630,12 @@ int getchar(void)
 	if (ch != -1)
 		return ch;
 
+	// let l2sh preempt the regular console read path
+	// даем l2sh забрать ввод раньше обычного консольного пути
+	l2sh_poll();
+	if (l2sh_tstc())
+		return l2sh_getc();
+
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Get from the standard input */
 		return fgetc(stdin);
@@ -632,6 +654,12 @@ int tstc(void)
 		return 0;
 
 	if (console_record_tstc())
+		return 1;
+
+	// surface pending l2sh input on non-blocking console checks
+	// показываем ожидающий ввод l2sh и в неблокирующих проверках консоли
+	l2sh_poll();
+	if (l2sh_tstc())
 		return 1;
 
 	if (gd->flags & GD_FLG_DEVINIT) {
@@ -747,6 +775,10 @@ void putc(const char c)
 		pre_console_putc(c);
 		serial_putc(c);
 	}
+
+	// mirror console output into the active l2sh session
+	// зеркалим вывод консоли в активную сессию l2sh
+	l2sh_putc(c);
 }
 
 void puts(const char *s)
@@ -787,6 +819,10 @@ void puts(const char *s)
 		pre_console_puts(s);
 		serial_puts(s);
 	}
+
+	// mirror console output into the active l2sh session
+	// зеркалим вывод консоли в активную сессию l2sh
+	l2sh_puts(s);
 }
 
 #ifdef CONFIG_CONSOLE_FLUSH_SUPPORT

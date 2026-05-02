@@ -86,6 +86,8 @@
 #include <env_internal.h>
 #include <errno.h>
 #include <image.h>
+#include <l2sh.h>
+#include <l2sh_proto.h>
 #include <led.h>
 #include <log.h>
 #if defined(CONFIG_LED_STATUS)
@@ -471,9 +473,7 @@ int net_loop(enum proto_t protocol)
 	}
 
 restart:
-#ifdef CONFIG_USB_KEYBOARD
 	net_busy_flag = 0;
-#endif
 	net_set_state(NETLOOP_CONTINUE);
 
 	/*
@@ -628,9 +628,7 @@ restart:
 		status_led_set(CONFIG_LED_STATUS_RED, CONFIG_LED_STATUS_ON);
 #endif /* CONFIG_SYS_FAULT_ECHO_LINK_DOWN, ... */
 #endif /* CONFIG_MII, ... */
-#ifdef CONFIG_USB_KEYBOARD
 	net_busy_flag = 1;
-#endif
 
 	/*
 	 *	Main packet reception loop.  Loop receiving packets until
@@ -757,9 +755,7 @@ restart:
 	}
 
 done:
-#ifdef CONFIG_USB_KEYBOARD
 	net_busy_flag = 0;
-#endif
 #ifdef CONFIG_CMD_TFTPPUT
 	/* Clear out the handlers */
 	net_set_udp_handler(NULL);
@@ -1214,6 +1210,7 @@ void net_process_received_packet(uchar *in_packet, int len)
 	struct in_addr dst_ip;
 	struct in_addr src_ip;
 	int eth_proto;
+	int frame_len = len;
 #if defined(CONFIG_CMD_CDP)
 	int iscdp;
 #endif
@@ -1312,6 +1309,11 @@ void net_process_received_packet(uchar *in_packet, int len)
 		/* not matched? */
 		if (vlanid != (myvlanid & VLAN_IDMASK))
 			return;
+	}
+
+	if (eth_proto == L2SH_ETHERTYPE) {
+		l2sh_rx(in_packet, frame_len);
+		return;
 	}
 
 	switch (eth_proto) {
