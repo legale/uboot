@@ -59,6 +59,8 @@
 	mediatek,gmac-id = <0>;
 	phy-mode = "sgmii";
 	phy-handle = <&phy1>;
+	nvmem-cells = <&mac_wan 0>;
+	nvmem-cell-names = "mac-address";
 
 	mdio {
 		phy1: ethernet-phy@1 {
@@ -141,6 +143,24 @@
 			partition@50000 {
 				label = "Factory";
 				reg = <0x50000 0x0010000>;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					mac_lan: macaddr@30 {
+						compatible = "mac-base";
+						reg = <0x30 0x6>;
+						#nvmem-cell-cells = <1>;
+					};
+
+					mac_wan: macaddr@4 {
+						compatible = "mac-base";
+						reg = <0x4 0x6>;
+						#nvmem-cell-cells = <1>;
+					};
+				};
 			};
 
 			partition@60000 {

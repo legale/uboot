@@ -60,6 +60,8 @@
   phy-mode = "2500base-x";
   mediatek,switch = "auto";
   reset-gpios = <&pio 39 GPIO_ACTIVE_HIGH>;
+  nvmem-cells = <&mac_wan 0>;
+  nvmem-cell-names = "mac-address";
 
   fixed-link {
     speed = <2500>;
@@ -140,6 +142,18 @@
       partition@50000 {
         label = "Factory";
         reg = <0x50000 0x0010000>;
+
+        nvmem-layout {
+          compatible = "fixed-layout";
+          #address-cells = <1>;
+          #size-cells = <1>;
+
+          mac_wan: mac_lan: macaddr@2a {
+            compatible = "mac-base";
+            reg = <0x2a 0x6>;
+            #nvmem-cell-cells = <1>;
+          };
+        };
       };
 
       partition@60000 {

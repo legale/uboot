@@ -7,11 +7,11 @@
 #include <dt-bindings/input/input.h>
 
 / {
-	compatible = "yuncore,ax820", "fplus,wf-ap-622l-iic", "mediatek,mt7621-soc";
+	compatible = "yuncore,ax820", "rfnet,rf-ax-622i", "fplus,wf-ap-622l-iic", "mediatek,mt7621-soc";
 	model = "YunCore AX820";
 
 	aliases {
-		ethernet0 = &eth;
+		ethernet0 = &eth0;
 		serial0 = &uart0;
 		spi0 = &spi;
 	};
@@ -49,6 +49,41 @@
 			gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
 		};
 	};
+
+	eth0: eth@1e100000 {
+		compatible = "mediatek,mt7621-eth";
+		reg = <0x1e100000 0x20000>;
+		mediatek,ethsys = <&sysc>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&eth_pins>;
+
+		resets = <&rstctrl RST_FE>, <&rstctrl RST_GMAC>, <&rstctrl RST_MCM>;
+		reset-names = "fe", "gmac", "mcm";
+
+		clocks = <&clkctrl MT7621_CLK_GDMA>,
+				<&clkctrl MT7621_CLK_ETH>;
+		clock-names = "gmac", "fe";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mediatek,gmac-id = <0>;
+		phy-mode = "rgmii";
+		mediatek,switch = "mt7530";
+		mediatek,mcm;
+
+		status = "okay";
+		nvmem-cells = <&mac_wan 0>;
+		nvmem-cell-names = "mac-address";
+
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
+		};
+	};
+
+
 };
 
 &pinctrl {
@@ -103,18 +138,16 @@
 					#size-cells = <1>;
 
 					mac_lan: macaddr@e000 {
-							compatible = "mac-base";
-							reg = <0xe000 0x6>;
-							#nvmem-cell-cells = <1>;
+						compatible = "mac-base";
+						reg = <0xe000 0x6>;
+						#nvmem-cell-cells = <1>;
 					};
-                                        mac_wan: macaddr@e006 {
-                                                        compatible = "mac-base";
-                                                        reg = <0xe006 0x6>;
-                                                        #nvmem-cell-cells = <1>;
-                                        };
-
+					mac_wan: macaddr@e006 {
+						compatible = "mac-base";
+						reg = <0xe006 0x6>;
+						#nvmem-cell-cells = <1>;
+					};
 				};
-
 			};
 
 			partition@90000 {
@@ -126,8 +159,5 @@
 	};
 };
 
-&eth {
-	status = "okay";
-	nvmem-cells = <&mac_wan 0>;
-	nvmem-cell-names = "mac-address";
-};
+
+
