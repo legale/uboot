@@ -1,0 +1,50 @@
+serverip=10.11.11.120
+gatewayip=10.11.11.2
+ipaddr=10.11.11.240
+loadaddr=0x46000000
+
+ask_ipaddr=echo; echo default=${ipaddr}; setenv v; env ask v "ipaddr: " 64; test -n ${v} && setenv ipaddr ${v}; echo ipaddr=${ipaddr}
+ask_gatewayip=echo; echo default=${gatewayip}; setenv v; env ask v "gatewayip: " 64; test -n ${v} && setenv gatewayip ${v}; echo gatewayip=${gatewayip}
+ask_serverip=echo; echo default=${serverip}; setenv v; env ask v "serverip: " 64; test -n ${v} && setenv serverip ${v}; echo serverip=${serverip}
+
+ask_net=run ask_ipaddr; run ask_serverip; run ask_gatewayip
+
+ask_path_bl2=echo; echo default=${path_bl2}; setenv file_path ${path_bl2}; setenv v; env ask v "BL2 path: " 192; test -n {v} && setenv path_bl2 ${v}; setenv file_path ${path_bl2}
+ask_path_boot=echo; echo default=${path_boot}; setenv file_path ${path_boot}; setenv v; env ask v "Initramfs path: " 192; test -n ${v} && setenv path_boot ${v}; setenv file_path ${path_boot}
+ask_path_fip=echo; echo default=${path_fip}; setenv file_path ${path_fip}; setenv v; env ask v "FIP path: " 192; test -n {v} && setenv path_fip ${v}; setenv file_path ${path_fip}
+ask_path_fw=echo; echo default=${path_fw}; setenv file_path ${path_fw}; setenv v; env ask v "Firmware path: " 192; test -n {v} && setenv path_fw ${v}; setenv file_path ${path_fw}
+
+boot_firmware=mtd read firmware ${loadaddr}; run boot_exec
+boot_exec=echo == BOOT ==; bootm ${loadaddr}
+
+path_bl2=/ax835/yuncore_ax835-preloader.bin
+path_boot=/ax835/yuncore_ax835-initramfs-kernel.bin
+path_fip=/ax835/yuncore_ax835-bl31-uboot.fip
+path_fw=/ax835/yuncore_ax835-squashfs-sysupgrade.bin
+
+write_bl2=echo write BL2 size=${filesize}; mtd write BL2 ${loadaddr} 0x0 0x${filesize}; echo == BL2 DONE ==; echo
+write_fip=echo write FIP size=${filesize}; mtd write FIP ${loadaddr} 0x0 0x${filesize}; echo == FIP DONE ==; echo
+write_fw=echo write firmware size=${filesize}; mtd write firmware ${loadaddr} 0x0 0x${filesize}; echo == FIRMWARE DONE ==
+
+tftp_get=echo == TFTP LOAD ==; echo ${file_path}; echo ${serverip}:${file_path}; tftpboot ${loadaddr} ${serverip}:${file_path} && echo filesize=${filesize}'
+
+bootcmd=bootmenu
+bootdelay=2
+bootmenu_0=Boot from firmware=run boot_firmware
+bootmenu_1=Boot initramfs via TFTP=run ask_net ask_path_boot tftp_get boot_exec
+bootmenu_2=Flash BL2=run ask_net ask_path_bl2 tftp_get calc_erasesize erase_bl2 write_bl2
+bootmenu_3=Flash BL31+BL33 FIP=run ask_net; run ask_path_fip; run tftp_get calc_erasesize erase_fip write_fip
+bootmenu_4=Flash firmware=run ask_net; run ask_path_fw; run tftp_get calc_erasesize fw_calc_parts fw_erase_1 fw_erase_2 fw_erase_3 fw_erase_4 fw_write
+bootmenu_5=Reboot=reset
+bootmenu_default=0
+bootmenu_delay=10
+bootmenu_title=   AX835 / FAP830 Recovery Menu
+
+calc_erasesize=echo; echo == CALCULATE ERASE SIZE ==; echo filesize=${filesize}; setexpr erasesize ${filesize} + 0x1ffff; setexpr erasesize ${erasesize} \\& 0xfffe0000 && echo erasesize=${erasesize}
+erase_bl2=echo erase BL2 size=${erasesize}; mtd erase BL2 0x0 0x${erasesize}
+erase_fip=echo erase FIP size=${erasesize}; mtd erase FIP 0x0 0x${erasesize}
+fw_calc_parts=setexpr quarter ${erasesize} / 4; setexpr half ${erasesize} / 2; setexpr half_quarter ${half} + ${quarter}; echo quarter=${quarter}; echo half=${half}; echo half_quarter=${half_quarter}; echo
+fw_erase_1=echo erase firmware part1 offset=0x0 size=${quarter}; mtd erase firmware 0x0 0x${quarter}
+fw_erase_2=echo erase firmware part2 offset=${quarter} size=${quarter}; mtd erase firmware 0x${quarter} 0x${quarter}
+fw_erase_3=echo erase firmware part3 offset=${half} size=${quarter}; mtd erase firmware 0x${half} 0x${quarter}
+fw_erase_4=echo erase firmware part4 offset=${half_quarter} size=${quarter}; mtd erase firmware 0x${half_quarter} 0x${quarter}

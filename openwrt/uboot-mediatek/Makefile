@@ -25,22 +25,19 @@ define Download/mt7621-stage-sram-noprint
   HASH:=8ee419275144fc298e9444d413d98e965a55d283152a74ea6a1f8de79eb516b6
 endef
 
-ifdef CONFIG_TARGET_ramips_mt7621
-ifdef CONFIG_DEBUG
 $(eval $(call Download,mt7621-stage-sram))
-else
 $(eval $(call Download,mt7621-stage-sram-noprint))
-endif
-endif
 
 define U-Boot/Default
   BUILD_TARGET:=mediatek
   UBOOT_IMAGE:=u-boot-mtk.bin
   HIDDEN:=1
+  DEFAULT_VARIANT:=$(if $(CONFIG_PACKAGE_u-boot-$(1)),1,$(if $(filter $(1),$(UBOOT_DEFAULT_VARIANT)),1))
 endef
 
 define U-Boot/mt7620_rfb
   NAME:=MT7620 Reference Board
+  DEFAULT:=y if TARGET_ramips_mt7620
   UBOOT_CONFIG:=mt7620_rfb
   BUILD_DEVICES:=ralink_mt7620a-evb
   BUILD_TARGET:=ramips
@@ -86,8 +83,9 @@ endef
 
 define U-Boot/mt7621_yuncore_ax820
   NAME:=YunCore AX820
+  DEFAULT_VARIANT:=1
   UBOOT_CONFIG:=mt7621_yuncore_ax820
-  BUILD_DEVICES:=yuncore_ax820 fplus_wf-ap-622l-iic
+  BUILD_DEVICES:=yuncore_ax820 rfnet_rf-ax-622i fplus_wf-ap-622l-iic
   BUILD_TARGET:=ramips
   BUILD_SUBTARGET:=mt7621
   UBOOT_IMAGE:=u-boot-mt7621.bin u-boot.bin u-boot-spl-ddr.img u-boot-lzma.img
@@ -95,6 +93,7 @@ endef
 
 define U-Boot/mt7622_rfb1
   NAME:=MT7622 Reference Board 1
+  DEFAULT:=y if TARGET_mediatek_mt7622
   UBOOT_CONFIG:=mt7622_rfb
   BUILD_DEVICES:=mediatek_mt7622-rfb1 mediatek_mt7622-rfb1-ubi
   BUILD_SUBTARGET:=mt7622
@@ -197,6 +196,7 @@ endef
 
 define U-Boot/mt7623n_bpir2
   NAME:=Banana Pi R2 (mt7623)
+  DEFAULT:=y if TARGET_mediatek_mt7623
   BUILD_DEVICES:=bananapi_bpi-r2
   BUILD_SUBTARGET:=mt7623
   UBOOT_IMAGE:=u-boot.bin
@@ -205,6 +205,7 @@ endef
 
 define U-Boot/mt7628_rfb
   NAME:=MT7628 Reference Board
+  DEFAULT:=y if TARGET_ramips_mt76x8
   BUILD_DEVICES:=mediatek_mt7628an-eval-board
   BUILD_TARGET:=ramips
   BUILD_SUBTARGET:=mt76x8
@@ -223,6 +224,7 @@ endef
 
 define U-Boot/mt7629_rfb
   NAME:=MT7629 Reference Board
+  DEFAULT:=y if TARGET_mediatek_mt7629
   BUILD_SUBTARGET:=mt7629
   BUILD_DEVICES:=mediatek_mt7629-rfb
   UBOOT_CONFIG:=mt7629_rfb
@@ -505,6 +507,7 @@ endef
 
 define U-Boot/mt7981_rfb-spim-nand
   NAME:=MT7981 Reference Board
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_mediatek_mt7981-rfb
   BUILD_SUBTARGET:=filogic
   BUILD_DEVICES:=mediatek_mt7981-rfb
   UBOOT_CONFIG:=mt7981_rfb
@@ -517,6 +520,7 @@ endef
 
 define U-Boot/mt7981_rfb-emmc
   NAME:=MT7981 Reference Board
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_mediatek_mt7981-rfb
   BUILD_SUBTARGET:=filogic
   BUILD_DEVICES:=mediatek_mt7981-rfb
   UBOOT_CONFIG:=mt7981_emmc_rfb
@@ -542,6 +546,7 @@ endef
 
 define U-Boot/mt7981_rfb-nor
   NAME:=MT7981 Reference Board
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_mediatek_mt7981-rfb
   BUILD_SUBTARGET:=filogic
   BUILD_DEVICES:=mediatek_mt7981-rfb
   UBOOT_CONFIG:=mt7981_nor_rfb
@@ -549,11 +554,64 @@ define U-Boot/mt7981_rfb-nor
   BL2_BOOTDEV:=nor
   BL2_SOC:=mt7981
   BL2_DDRTYPE:=ddr3
+  DEPENDS:=+trusted-firmware-a-mt7981-nor-ddr3 +trusted-firmware-a-mt7981-ram-ddr3
+endef
+
+define U-Boot/mt7981_yuncore_ax835-nor
+  NAME:=YunCore AX835
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_yuncore_ax835
+  BUILD_SUBTARGET:=filogic
+  BUILD_DEVICES:=yuncore_ax835
+  UBOOT_CONFIG:=mt7981_yuncore_ax835_nor
+  UBOOT_IMAGE:=u-boot.fip
+  BL2_BOOTDEV:=nor
+  BL2_SOC:=mt7981
+  BL2_DDRTYPE:=ddr3
+  DEPENDS:=+trusted-firmware-a-mt7981-nor-ddr3 +trusted-firmware-a-mt7981-ram-ddr3
+endef
+
+define U-Boot/mt7981_yuncore_ax835_32mb-nor
+  NAME:=YunCore AX835-32mb
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_yuncore_ax835-32mb
+  BUILD_SUBTARGET:=filogic
+  BUILD_DEVICES:=yuncore_ax835-32mb
+  UBOOT_CONFIG:=mt7981_yuncore_ax835_32mb_nor
+  UBOOT_IMAGE:=u-boot.fip
+  BL2_BOOTDEV:=nor
+  BL2_SOC:=mt7981
+  BL2_DDRTYPE:=ddr3
+  DEPENDS:=+trusted-firmware-a-mt7981-nor-ddr3 +trusted-firmware-a-mt7981-ram-ddr3
+endef
+
+define U-Boot/mt7981_yuncore_fap830-nor
+  NAME:=YunCore FAP830
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_yuncore_fap830
+  BUILD_SUBTARGET:=filogic
+  BUILD_DEVICES:=yuncore_fap830
+  UBOOT_CONFIG:=mt7981_yuncore_fap830_nor
+  UBOOT_IMAGE:=u-boot.fip
+  BL2_BOOTDEV:=nor
+  BL2_SOC:=mt7981
+  BL2_DDRTYPE:=ddr3
   DEPENDS:=+trusted-firmware-a-mt7981-nor-ddr3
+endef
+
+define U-Boot/mt7981_yuncore_fap830-32mb-nor
+  NAME:=YunCore FAP830-32mb
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_yuncore_fap830-32mb
+  BUILD_SUBTARGET:=filogic
+  BUILD_DEVICES:=yuncore_fap830-32mb
+  UBOOT_CONFIG:=mt7981_yuncore_fap830_32mb_nor
+  UBOOT_IMAGE:=u-boot.fip
+  BL2_BOOTDEV:=nor
+  BL2_SOC:=mt7981
+  BL2_DDRTYPE:=ddr3
+  DEPENDS:=+trusted-firmware-a-mt7981-nor-ddr3 +trusted-firmware-a-mt7981-ram-ddr3
 endef
 
 define U-Boot/mt7981_rfb-sd
   NAME:=MT7981 Reference Board
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_mediatek_mt7981-rfb
   BUILD_SUBTARGET:=filogic
   BUILD_DEVICES:=mediatek_mt7981-rfb
   UBOOT_CONFIG:=mt7981_sd_rfb
@@ -561,11 +619,12 @@ define U-Boot/mt7981_rfb-sd
   BL2_BOOTDEV:=sdmmc
   BL2_SOC:=mt7981
   BL2_DDRTYPE:=ddr3
-  DEPENDS:=+trusted-firmware-a-mt7981-sdmmc-ddr3
+  DEPENDS:=+trusted-firmware-a-mt7981-sdmmc-ddr3 +trusted-firmware-a-mt7981-ram-ddr3
 endef
 
 define U-Boot/mt7981_rfb-snfi
   NAME:=MT7981 Reference Board
+  DEFAULT:=y if TARGET_mediatek_filogic_DEVICE_mediatek_mt7981-rfb
   BUILD_SUBTARGET:=filogic
   BUILD_DEVICES:=mediatek_mt7981-rfb
   UBOOT_CONFIG:=mt7981_snfi_nand_rfb
@@ -1166,6 +1225,10 @@ UBOOT_TARGETS := \
 	mt7981_rfb-spim-nand \
 	mt7981_rfb-emmc \
 	mt7981_rfb-nor \
+	mt7981_yuncore_ax835-nor \
+	mt7981_yuncore_ax835_32mb-nor \
+	mt7981_yuncore_fap830-32mb-nor \
+	mt7981_yuncore_fap830-nor \
 	mt7981_rfb-sd \
 	mt7981_rfb-snfi \
 	mt7981_routerich_ax3000 \
@@ -1211,8 +1274,38 @@ UBOOT_TARGETS := \
 	mt7988_rfb-spim-nand \
 	mt7988_rfb-snand \
 	mt7988_rfb-nor \
-	mt7988_rfb-emmc \
-	mt7988_rfb-sd
+		mt7988_rfb-emmc \
+		mt7988_rfb-sd
+
+# Pick one default variant per selected target/subtarget.
+# This is used by OpenWrt metadata when no explicit CONFIG_PACKAGE_u-boot-* is enabled.
+UBOOT_DEFAULT_VARIANT :=
+ifdef CONFIG_TARGET_ramips_mt7620
+UBOOT_DEFAULT_VARIANT := mt7620_rfb
+endif
+ifdef CONFIG_TARGET_ramips_mt7621
+UBOOT_DEFAULT_VARIANT := mt7621_yuncore_ax820
+endif
+ifdef CONFIG_TARGET_ramips_mt76x8
+UBOOT_DEFAULT_VARIANT := mt7628_rfb
+endif
+ifdef CONFIG_TARGET_mediatek_mt7622
+UBOOT_DEFAULT_VARIANT := mt7622_rfb1
+endif
+ifdef CONFIG_TARGET_mediatek_mt7623
+UBOOT_DEFAULT_VARIANT := mt7623n_bpir2
+endif
+ifdef CONFIG_TARGET_mediatek_mt7629
+UBOOT_DEFAULT_VARIANT := mt7629_rfb
+endif
+ifdef CONFIG_TARGET_mediatek_filogic
+UBOOT_DEFAULT_VARIANT := mt7981_rfb-nor
+endif
+
+UBOOT_EXTRA_IMAGE :=
+ifdef CONFIG_TARGET_mediatek_filogic
+UBOOT_EXTRA_IMAGE += u-boot-lzma.img
+endif
 
 UBOOT_CUSTOMIZE_CONFIG := \
 	--disable TOOLS_KWBIMAGE \
@@ -1221,7 +1314,7 @@ UBOOT_CUSTOMIZE_CONFIG := \
 	--disable PYLIBFDT
 
 ifdef CONFIG_TARGET_mediatek
-UBOOT_MAKE_FLAGS += $(UBOOT_IMAGE:.fip=.bin)
+UBOOT_MAKE_FLAGS += $(UBOOT_IMAGE:.fip=.bin) $(UBOOT_EXTRA_IMAGE)
 endif
 
 define Build/fip-image
@@ -1245,7 +1338,11 @@ define Build/Prepare
 ifdef CONFIG_DEBUG
 	$(CP) $(DL_DIR)/mt7621_stage_sram.bin $(PKG_BUILD_DIR)/
 else
-	$(CP) $(DL_DIR)/mt7621_stage_sram_noprint.bin $(PKG_BUILD_DIR)/mt7621_stage_sram.bin
+	if [ -f "$(DL_DIR)/mt7621_stage_sram_noprint.bin" ]; then \
+		$(CP) $(DL_DIR)/mt7621_stage_sram_noprint.bin $(PKG_BUILD_DIR)/mt7621_stage_sram.bin; \
+	else \
+		$(CP) $(DL_DIR)/mt7621_stage_sram.bin $(PKG_BUILD_DIR)/; \
+	fi
 endif
 endef
 
@@ -1261,15 +1358,22 @@ ifneq ($(filter u-boot.fip,$(UBOOT_IMAGE)),)
 endif
 endef
 
-# don't stage files to bindir, let target/linux/mediatek/image/*.mk do that
+# don't install package payload for mediatek, but still publish build artifacts
+# to the target bin dir in addition to STAGING_DIR_IMAGE.
 ifdef CONFIG_TARGET_mediatek
 define Package/u-boot/install
 endef
 endif
 
+ifneq ($(CONFIG_PACKAGE_u-boot-$(BUILD_VARIANT))$(DEVELOPER),)
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
-	$(foreach img,$(UBOOT_IMAGE),$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(img) $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-$(img);)
+	$(foreach img,$(UBOOT_IMAGE) $(UBOOT_EXTRA_IMAGE),$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(img) $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-$(img);)
+ifdef CONFIG_TARGET_mediatek
+	$(INSTALL_DIR) $(BIN_DIR)
+	$(foreach img,$(UBOOT_IMAGE) $(UBOOT_EXTRA_IMAGE),$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(img) $(BIN_DIR)/$(BUILD_VARIANT)-$(img);)
+endif
 endef
+endif
 
 $(eval $(call BuildPackage/U-Boot))

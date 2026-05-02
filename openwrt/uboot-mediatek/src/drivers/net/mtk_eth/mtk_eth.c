@@ -1258,14 +1258,26 @@ static int mtk_eth_probe(struct udevice *dev)
 		ret = mtk_mac_init(priv);
 
 	if (ret)
-		return ret;
+		goto err_unregister_mdio;
 
 	/* Probe phy if switch is not specified */
 	if (!priv->swname)
-		return mtk_phy_probe(dev);
+		ret = mtk_phy_probe(dev);
+	else
+		/* Initialize switch */
+		ret = mtk_switch_init(priv);
 
-	/* Initialize switch */
-	return mtk_switch_init(priv);
+	if (ret)
+		goto err_unregister_mdio;
+
+	return 0;
+
+err_unregister_mdio:
+	mdio_unregister(priv->mdio_bus);
+	mdio_free(priv->mdio_bus);
+	priv->mdio_bus = NULL;
+
+	return ret;
 }
 
 static int mtk_eth_remove(struct udevice *dev)

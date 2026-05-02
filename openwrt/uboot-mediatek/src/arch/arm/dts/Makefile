@@ -1125,6 +1125,10 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += \
 	mt7622-xiaomi-redmi-router-ax6s.dtb \
 	mt7623n-bananapi-bpi-r2.dtb \
 	mt7981-rfb.dtb \
+	mt7981-yuncore-ax835.dtb \
+	mt7981-yuncore-ax835-32mb.dtb \
+	mt7981-yuncore-fap830-32mb.dtb \
+	mt7981-yuncore-fap830.dtb \
 	mt7981-snfi-nand-rfb.dtb \
 	mt7981-emmc-rfb.dtb \
 	mt7981-sd-rfb.dtb \
