@@ -1,0 +1,133 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
+/dts-v1/;
+
+#include "mt7621.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	compatible = "yuncore,ax820", "fplus,wf-ap-622l-iic", "mediatek,mt7621-soc";
+	model = "YunCore AX820";
+
+	aliases {
+		ethernet0 = &eth;
+		serial0 = &uart0;
+		spi0 = &spi;
+	};
+
+	chosen {
+		stdout-path = &uart0;
+	};
+
+	keys {
+		compatible = "gpio-keys";
+
+		reset {
+			label = "reset";
+			gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>; // needed for uboot to work
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led_red {
+			label = "red";
+			gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
+		led_blue {
+			label = "blue";
+			gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+		};
+
+		led_green {
+			label = "green";
+			gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+		};
+	};
+};
+
+&pinctrl {
+	state_default: pin_state {
+		gpios {
+			groups = "jtag", "wdt";
+			function = "gpio";
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&spi {
+	status = "okay";
+
+	spi-flash@0 {
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <50000000>;
+		reg = <0>;
+		m25p,fast-read;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "Bootloader";
+				reg = <0x0 0x30000>;
+			};
+
+			partition@30000 {
+				label = "Config";
+				reg = <0x30000 0x10000>;
+			};
+
+			partition@50000 {
+				label = "Factory";
+				reg = <0x50000 0x40000>;
+				read-only;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					mac_lan: macaddr@e000 {
+							compatible = "mac-base";
+							reg = <0xe000 0x6>;
+							#nvmem-cell-cells = <1>;
+					};
+                                        mac_wan: macaddr@e006 {
+                                                        compatible = "mac-base";
+                                                        reg = <0xe006 0x6>;
+                                                        #nvmem-cell-cells = <1>;
+                                        };
+
+				};
+
+			};
+
+			partition@90000 {
+				compatible = "denx,uimage";
+				label = "firmware";
+				reg = <0x90000 0xf70000>;
+			};
+		};
+	};
+};
+
+&eth {
+	status = "okay";
+	nvmem-cells = <&mac_wan 0>;
+	nvmem-cell-names = "mac-address";
+};

@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_VERSION:=2026.01
-PKG_HASH:=b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54
+PKG_SOURCE_PROTO:=git
 PKG_BUILD_DEPENDS:=!(TARGET_ramips||TARGET_mediatek_mt7623):arm-trusted-firmware-tools/host
 
 UBOOT_USE_INTREE_DTC:=1
@@ -82,6 +82,15 @@ define U-Boot/mt7621_zbtlink_zbt-wg3526-16m
   BUILD_TARGET:=ramips
   BUILD_SUBTARGET:=mt7621
   UBOOT_IMAGE:=u-boot-mt7621.bin
+endef
+
+define U-Boot/mt7621_yuncore_ax820
+  NAME:=YunCore AX820
+  UBOOT_CONFIG:=mt7621_yuncore_ax820
+  BUILD_DEVICES:=yuncore_ax820 fplus_wf-ap-622l-iic
+  BUILD_TARGET:=ramips
+  BUILD_SUBTARGET:=mt7621
+  UBOOT_IMAGE:=u-boot-mt7621.bin u-boot.bin u-boot-spl-ddr.img u-boot-lzma.img
 endef
 
 define U-Boot/mt7622_rfb1
@@ -335,54 +344,6 @@ define U-Boot/mt7981_cudy_wbr3000uax-v1
   BL2_BOOTDEV:=cudy-ddr3
   BL2_SOC:=mt7981
   DEPENDS:=+trusted-firmware-a-mt7981-cudy-ddr3
-endef
-
-define U-Boot/mt7981_cudy_wr3000e-v1
-  NAME:=Cudy WR3000E v1
-  BUILD_SUBTARGET:=filogic
-  BUILD_DEVICES:=cudy_wr3000e-v1-ubootmod
-  UBOOT_CONFIG:=mt7981_cudy_wr3000e-v1
-  UBOOT_IMAGE:=u-boot.fip
-  BL2_BOOTDEV:=cudy
-  BL2_SOC:=mt7981
-  BL2_DDRTYPE:=ddr3
-  DEPENDS:=+trusted-firmware-a-mt7981-cudy-ddr3
-endef
-
-define U-Boot/mt7981_cudy_wr3000s-v1
-  NAME:=Cudy WR3000S v1
-  BUILD_SUBTARGET:=filogic
-  BUILD_DEVICES:=cudy_wr3000s-v1-ubootmod
-  UBOOT_CONFIG:=mt7981_cudy_wr3000s-v1
-  UBOOT_IMAGE:=u-boot.fip
-  BL2_BOOTDEV:=cudy
-  BL2_SOC:=mt7981
-  BL2_DDRTYPE:=ddr3
-  DEPENDS:=+trusted-firmware-a-mt7981-cudy-ddr3
-endef
-
-define U-Boot/mt7981_cudy_wr3000h-v1
-  NAME:=Cudy WR3000H v1
-  BUILD_SUBTARGET:=filogic
-  BUILD_DEVICES:=cudy_wr3000h-v1-ubootmod
-  UBOOT_CONFIG:=mt7981_cudy_wr3000h-v1
-  UBOOT_IMAGE:=u-boot.fip
-  BL2_BOOTDEV:=cudy
-  BL2_SOC:=mt7981
-  BL2_DDRTYPE:=ddr3
-  DEPENDS:=+trusted-firmware-a-mt7981-cudy-ddr3
-endef
-
-define U-Boot/mt7981_cudy_wr3000p-v1
-  NAME:=Cudy WR3000P v1
-  BUILD_SUBTARGET:=filogic
-  BUILD_DEVICES:=cudy_wr3000p-v1-ubootmod
-  UBOOT_CONFIG:=mt7981_cudy_wr3000p-v1
-  UBOOT_IMAGE:=u-boot.fip
-  BL2_BOOTDEV:=cudy
-  BL2_SOC:=mt7981
-  BL2_DDRTYPE:=ddr4
-  DEPENDS:=+trusted-firmware-a-mt7981-cudy-ddr4
 endef
 
 define U-Boot/mt7981_glinet_gl-mt2500
@@ -904,18 +865,6 @@ define U-Boot/mt7986_zyxel_ex5601-t0
   DEPENDS:=+trusted-firmware-a-mt7986-spim-nand-4k-ddr4
 endef
 
-define U-Boot/mt7986_zyxel_wx5600-t0
-  NAME:=Zyxel WX5600-T0
-  BUILD_SUBTARGET:=filogic
-  BUILD_DEVICES:=zyxel_wx5600-t0-ubootmod
-  UBOOT_CONFIG:=mt7986_zyxel_wx5600-t0
-  UBOOT_IMAGE:=u-boot.fip
-  BL2_BOOTDEV:=spim-nand-4k
-  BL2_SOC:=mt7986
-  BL2_DDRTYPE:=ddr3
-  DEPENDS:=+trusted-firmware-a-mt7986-spim-nand-4k-ddr3
-endef
-
 define U-Boot/mt7987_bananapi_bpi-r4-lite-emmc
   NAME:=BananaPi BPi-R4 Lite
   BUILD_SUBTARGET:=filogic
@@ -1175,6 +1124,7 @@ UBOOT_TARGETS := \
 	mt7621_nand_rfb \
 	mt7621_rfb \
 	mt7621_zbtlink_zbt-wg3526-16m \
+	mt7621_yuncore_ax820 \
 	mt7622_bananapi_bpi-r64-emmc \
 	mt7622_bananapi_bpi-r64-sdmmc \
 	mt7622_bananapi_bpi-r64-snand \
@@ -1199,10 +1149,6 @@ UBOOT_TARGETS := \
 	mt7981_comfast_cf-wr632ax \
 	mt7981_cudy_tr3000-v1 \
 	mt7981_cudy_wbr3000uax-v1 \
-	mt7981_cudy_wr3000e-v1 \
-	mt7981_cudy_wr3000s-v1 \
-	mt7981_cudy_wr3000h-v1 \
-	mt7981_cudy_wr3000p-v1 \
 	mt7981_gatonetworks_gdsp \
 	mt7981_glinet_gl-mt2500 \
 	mt7981_glinet_gl-x3000 \
@@ -1245,7 +1191,6 @@ UBOOT_TARGETS := \
 	mt7986_tplink_tl-xtr8488 \
 	mt7986_xiaomi_redmi-router-ax6000 \
 	mt7986_zyxel_ex5601-t0 \
-	mt7986_zyxel_wx5600-t0 \
 	mt7986_rfb \
 	mt7987_bananapi_bpi-r4-lite-emmc \
 	mt7987_bananapi_bpi-r4-lite-sdmmc \
@@ -1272,7 +1217,8 @@ UBOOT_TARGETS := \
 UBOOT_CUSTOMIZE_CONFIG := \
 	--disable TOOLS_KWBIMAGE \
 	--disable TOOLS_LIBCRYPTO \
-	--disable TOOLS_MKEFICAPSULE
+	--disable TOOLS_MKEFICAPSULE \
+	--disable PYLIBFDT
 
 ifdef CONFIG_TARGET_mediatek
 UBOOT_MAKE_FLAGS += $(UBOOT_IMAGE:.fip=.bin)
@@ -1289,16 +1235,19 @@ define Build/fip-image
 		$(PKG_BUILD_DIR)/u-boot.fip
 endef
 
-ifdef CONFIG_TARGET_ramips_mt7621
 define Build/Prepare
-	$(call Build/Prepare/Default)
+	rm -rf $(PKG_BUILD_DIR)
+	mkdir -p $(PKG_BUILD_DIR)
+	cp -a ./src/. $(PKG_BUILD_DIR)/
+	# Build host tools with host compiler, not target CC.
+	$(SED) '/^override HOSTCC = /d' $(PKG_BUILD_DIR)/tools/Makefile $(PKG_BUILD_DIR)/tools/env/Makefile
+	$(Build/Patch)
 ifdef CONFIG_DEBUG
 	$(CP) $(DL_DIR)/mt7621_stage_sram.bin $(PKG_BUILD_DIR)/
 else
 	$(CP) $(DL_DIR)/mt7621_stage_sram_noprint.bin $(PKG_BUILD_DIR)/mt7621_stage_sram.bin
 endif
 endef
-endif
 
 define Build/Configure
 	$(call Build/Configure/U-Boot)
@@ -1307,7 +1256,7 @@ endef
 
 define Build/Compile
 	$(call Build/Compile/U-Boot)
-ifeq ($(UBOOT_IMAGE),u-boot.fip)
+ifneq ($(filter u-boot.fip,$(UBOOT_IMAGE)),)
 	$(call Build/fip-image)
 endif
 endef
@@ -1320,7 +1269,7 @@ endif
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(STAGING_DIR_IMAGE)
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(UBOOT_IMAGE) $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-$(UBOOT_IMAGE)
+	$(foreach img,$(UBOOT_IMAGE),$(INSTALL_DATA) $(PKG_BUILD_DIR)/$(img) $(STAGING_DIR_IMAGE)/$(BUILD_VARIANT)-$(img);)
 endef
 
 $(eval $(call BuildPackage/U-Boot))

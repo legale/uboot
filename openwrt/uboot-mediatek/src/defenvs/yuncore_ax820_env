@@ -1,0 +1,9 @@
+ipaddr=192.168.1.1
+serverip=192.168.1.254
+loadaddr=0x83000000
+bootfile=openwrt-ramips-mt7621-yuncore_ax820-initramfs-kernel.bin
+bootcmd=run boot_nor
+boot_nor=bootm 0xbfc90000 ; reset
+boot_tftp=tftpboot $loadaddr $bootfile && bootm $loadaddr
+boot_tftp_forever=while true ; do run boot_tftp ; sleep 10 ; done
+preboot=led red blink 1000 ; if button reset ; then env default -f -a ; env save ; dhcp ; run boot_tftp_forever ; fi
