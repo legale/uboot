@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2025
+ * Author: Mikhail Zhilkin <csharper2005@gmail.com>
+ */
+
+/dts-v1/;
+#include "mt7987a.dtsi"
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "Routerich BE7200";
+	compatible = "routerich,be7200",
+		     "mediatek,mt7987";
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		button-0 {
+			label = "mesh";
+			linux,code = <KEY_WPS_BUTTON>;
+			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+			debounce-interval = <10>;
+		};
+
+		button-1 {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
+			debounce-interval = <10>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led-0 {
+			label = "blue:status";
+			gpios = <&pio 4 GPIO_ACTIVE_LOW>;
+		};
+
+		led-1 {
+			label = "blue:wlan5g";
+			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
+		};
+
+		led-2 {
+			label = "blue:mesh";
+			gpios = <&pio 7 GPIO_ACTIVE_LOW>;
+		};
+
+		led-3 {
+			label = "red:wan";
+			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
+		};
+
+		led-4 {
+			label = "blue:wan";
+			gpios = <&pio 9 GPIO_ACTIVE_LOW>;
+		};
+
+		led-5 {
+			label = "blue:lan3";
+			gpios = <&pio 10 GPIO_ACTIVE_LOW>;
+		};
+
+		led-6 {
+			label = "blue:lan2";
+			gpios = <&pio 11 GPIO_ACTIVE_LOW>;
+		};
+
+		led-7 {
+			label = "blue:lan1";
+			gpios = <&pio 12 GPIO_ACTIVE_LOW>;
+		};
+	};
+};

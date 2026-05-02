@@ -1,0 +1,22 @@
+ipaddr=192.168.1.1
+serverip=192.168.1.254
+loadaddr=0x46000000
+console=earlycon=uart8250,mmio32,0x11002000 console=ttyS0
+bootled_pwr=power_blue
+bootled_rec=power_amber
+bootcmd=run boot_or_recovery
+bootconf=config-1
+bootdelay=0
+bootfile=openwrt-mediatek-mt7622-xiaomi_redmi-router-ax6s-initramfs-recovery.itb
+bootfile_upg=openwrt-mediatek-mt7622-xiaomi_redmi-router-ax6s-squashfs-sysupgrade.itb
+boot_or_recovery=run boot_production ; led $bootled_pwr off ; led $bootled_rec on ; if ubi check fit ; then run boot_tftp_forever ; else run tftp_production ; fi
+boot_tftp=tftpboot $loadaddr $bootfile && bootm $loadaddr#$bootconf
+boot_tftp_forever=while true ; do run boot_tftp ; sleep 1 ; done
+boot_production=run ubi_read_production && bootm $loadaddr#$bootconf
+ubi_format=ubi detach ; mtd erase ubi && ubi part ubi
+ubi_init=ubi part ubi || run ubi_format
+ubi_prepare_rootfs=if ubi check rootfs_data ; then else if env exists rootfs_data_max ; then ubi create rootfs_data $rootfs_data_max dynamic || ubi create rootfs_data - dynamic ; else ubi create rootfs_data - dynamic ; fi ; fi
+ubi_remove_rootfs=ubi check rootfs_data && ubi remove rootfs_data
+ubi_write_production=ubi check fit && ubi remove fit ; run ubi_remove_rootfs ; ubi create fit $filesize dynamic && ubi write $loadaddr fit $filesize
+ubi_read_production=run ubi_init && ubi read $loadaddr fit && iminfo $loadaddr && run ubi_prepare_rootfs
+tftp_production=tftpboot $loadaddr $bootfile_upg && iminfo $loadaddr && run ubi_write_production && reset

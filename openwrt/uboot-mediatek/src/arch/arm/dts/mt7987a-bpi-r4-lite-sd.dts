@@ -1,0 +1,5 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+
+/dts-v1/;
+#include "mt7987a-bpi-r4-lite.dtsi"
+#include "mt7987-sd.dtsi"

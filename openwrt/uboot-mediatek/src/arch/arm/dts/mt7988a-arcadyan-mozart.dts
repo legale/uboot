@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: GPL-2.0
+
+/dts-v1/;
+#include "mt7988.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+	model = "MediaTek / Arcadyan - Mozart";
+	compatible = "arcadyan,mozart", "mediatek,mt7988";
+
+	chosen {
+		stdout-path = &uart0;
+	};
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+
+	reg_3p3v: regulator-3p3v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	reg_1p8v: regulator-1p8v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	keys {
+		compatible = "gpio-keys";
+
+		wps {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 143 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led-red {
+			label = "red:status";
+			gpios = <&pio 29 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-green {
+			label = "blue:status";
+			gpios = <&pio 30 GPIO_ACTIVE_HIGH>;
+		};
+		
+		led-blue {
+			label = "blue:status";
+			gpios = <&pio 31 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&eth0 {
+	status = "okay";
+	mediatek,gmac-id = <0>;
+	phy-mode = "usxgmii";
+	mediatek,switch = "mt7988";
+
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+		pause;
+	};
+};
+
+&pio {
+	mmc0_pins_default: mmc0default {
+		mux {
+			function = "flash";
+			groups =  "emmc_51";
+		};
+
+		conf-cmd-dat {
+			pins = "EMMC_DATA_0", "EMMC_DATA_1", "EMMC_DATA_2",
+			       "EMMC_DATA_3", "EMMC_DATA_4", "EMMC_DATA_5",
+			       "EMMC_DATA_6", "EMMC_DATA_7", "EMMC_CMD";
+			input-enable;
+		};
+
+		conf-clk {
+			pins = "EMMC_CK";
+		};
+
+		conf-dsl {
+			pins = "EMMC_DSL";
+		};
+
+		conf-rst {
+			pins = "EMMC_RSTB";
+		};
+	};
+};
+
+&mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc0_pins_default>;
+	max-frequency = <52000000>;
+	bus-width = <8>;
+	cap-mmc-highspeed;
+	cap-mmc-hw-reset;
+	vmmc-supply = <&reg_3p3v>;
+	vqmmc-supply = <&reg_1p8v>;
+	non-removable;
+	status = "okay";
+};
